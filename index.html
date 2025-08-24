@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Кликер — престиж, достижения, звуки, лидерборд</title>
+  <style>
+    :root{
+      --bg:#0f1226; --card:#171a33; --accent:#7c5cff; --accent2:#3ddc97; --text:#e8e9ff; --muted:#9aa0c3; --danger:#ff6b6b; --gold:#ffd54a;
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,system-ui,Arial,sans-serif; color:var(--text);
+      background:radial-gradient(1200px 600px at 10% -10%, #1d2042 10%, transparent),
+                 radial-gradient(1200px 800px at 110% 10%, #1a1e3b 10%, transparent), var(--bg);
+      display:flex; align-items:center; justify-content:center; padding:24px}
+    .app{width:min(1120px,100%); display:grid; grid-template-columns: 1.1fr .9fr; gap:20px}
+    @media (max-width: 980px){.app{grid-template-columns:1fr}}
+
+    .card{background:linear-gradient(180deg,#1a1e3c 0%, #141833 100%); border:1px solid #2a2f59;
+      border-radius:var(--radius); box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03); padding:22px}
+    .heading{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px}
+    .title{font-weight:800; letter-spacing:.3px}
+    .muted{color:var(--muted)}
+    .money{font-size:clamp(28px,5vw,44px); font-weight:900; letter-spacing:.5px}
+
+    .click-btn{width:100%; padding:22px 24px; font-size:clamp(18px,3vw,24px); font-weight:800; letter-spacing:.5px;
+      color:#0a0e23; background:linear-gradient(180deg, var(--accent) 0%, #6248ff 100%);
+      border:none; border-radius:22px; cursor:pointer; transform:translateY(0); transition:transform .06s ease, box-shadow .2s ease;
+      box-shadow:0 12px 0 #3e2fb8,0 22px 40px rgba(124,92,255,.35)}
+    .click-btn:active{transform:translateY(4px); box-shadow:0 6px 0 #3e2fb8,0 10px 26px rgba(124,92,255,.35)}
+
+    .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:16px 0 8px}
+    .stat{background:#141736;border:1px solid #2a2f59;border-radius:12px;padding:10px 12px}
+    .stat .v{font-weight:800}
+
+    .grid{display:grid; grid-template-columns:1fr; gap:10px}
+    .section{background:#141736;border:1px solid #2a2f59;border-radius:14px;padding:12px}
+
+    .upgrades{display:grid; grid-template-columns:1fr; gap:10px}
+    .upgrade{display:flex; gap:14px; align-items:center; background:#141736;border:1px solid #2a2f59;border-radius:14px;padding:12px}
+    .u-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:900;background:#1d2150}
+    .u-body{flex:1}
+    .u-title{font-weight:800}
+    .u-sub{font-size:13px;color:var(--muted)}
+    .u-buy{display:flex;gap:10px;align-items:center}
+
+    .btn{padding:10px 14px;border-radius:12px;border:1px solid #2a2f59;background:#1a1e3c;color:var(--text);cursor:pointer;font-weight:700}
+    .btn[disabled]{opacity:.55; cursor:not-allowed}
+    .btn.primary{background:linear-gradient(180deg, var(--accent2) 0%, #2fbf89 100%); color:#05161a; border:none}
+    .btn.danger{background:linear-gradient(180deg, var(--danger) 0%, #ff5252 100%); color:#230a0a; border:none}
+    .btn.gold{background:linear-gradient(180deg, var(--gold) 0%, #ffb300 100%); color:#3a2200; border:none}
+
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    .footer{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap}
+
+    .tooltip{position:relative}
+    .tooltip:hover .tip{opacity:1; transform:translateY(0); pointer-events:auto}
+    .tip{position:absolute; inset:auto auto 120% 0; background:#0c0f26; border:1px solid #2a2f59; padding:10px 12px; border-radius:10px;
+      width:max(220px, 40ch); box-shadow:0 10px 30px rgba(0,0,0,.4); opacity:0; transform:translateY(8px); transition:all .15s ease; pointer-events:none; z-index:10}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:#0f1333; border:1px solid #2a2f59; border-radius:6px; padding:1px 6px; font-size:.9em}
+
+    .ach-list{display:grid; gap:8px}
+    .ach{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:#0f1333; border:1px dashed #2a2f59}
+    .ach.done{border-style:solid; background:linear-gradient(180deg,rgba(255,213,74,.2), rgba(255,179,0,.1))}
+
+    .board{width:100%; border-collapse:collapse}
+    .board th,.board td{border-bottom:1px solid #2a2f59; padding:8px 6px; text-align:left}
+
+    .toast{position:fixed; right:18px; bottom:18px; max-width:420px; background:#111432; color:var(--text);
+      border:1px solid #2a2f59; border-radius:12px; padding:12px 14px; box-shadow:0 20px 50px rgba(0,0,0,.45); display:none}
+    .toast.show{display:block; animation:fadein .2s ease}
+    @keyframes fadein{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
+
+    :root{
+--bg:#0f1226; --card:#171a33; --accent:#7c5cff; --accent2:#3ddc97; --text:#e8e9ff; --muted:#9aa0c3; --danger:#ff6b6b; --gold:#ffd54a;
+--radius:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; font-family:Inter,system-ui,Arial,sans-serif; color:var(--text); background:var(--bg)}
+
+
+body{display:flex; flex-direction:column; min-height:100vh;}
+
+
+header{
+background:linear-gradient(180deg,#1a1e3c 0%, #141833 100%);
+border-bottom:2px solid #2a2f59;
+padding:20px; text-align:center; font-size:clamp(20px,3vw,32px); font-weight:800;
+color:var(--gold);
+box-shadow:0 8px 20px rgba(0,0,0,.4);
+}
+
+
+main{flex:1; display:flex; align-items:center; justify-content:center; padding:24px}
+
+
+.app{width: min(1400px,100%); height:90vh; display:grid; grid-template-columns: 1.1fr .9fr; gap:20px}
+@media (max-width: 980px){.app{grid-template-columns:1fr; height:auto;}}
+
+
+.card{background:linear-gradient(180deg,#1a1e3c 0%, #141833 100%); border:1px solid #2a2f59;
+border-radius:var(--radius); box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03); padding:22px; overflow-y:auto}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Левая колонка: игра -->
+    <section class="card" aria-labelledby="gameTitle">
+      <div class="heading">
+        <div>
+          <div class="title" id="gameTitle">Кликер</div>
+          <div class="muted">Кликай, апгрейдь, престиж — и в таблицу лидеров ✨</div>
+        </div>
+        <div class="tooltip">
+          <span class="kbd">Space</span>
+          <div class="tip">Пробел — клик. Сохранение — автоматически (localStorage). Оффлайн-прогресс учитывается. Звуки можно выключить.</div>
+        </div>
+      </div>
+
+      <div class="money" id="coins">0</div>
+      <div class="stats">
+        <div class="stat"><div class="muted">За клик</div><div class="v" id="perClick">+1</div></div>
+        <div class="stat"><div class="muted">В секунду</div><div class="v" id="perSec">0</div></div>
+        <div class="stat"><div class="muted">Множитель</div><div class="v" id="mult">×1.0</div></div>
+        <div class="stat"><div class="muted">Престиж очки</div><div class="v" id="pp">0</div></div>
+      </div>
+
+      <button class="click-btn" id="clickBtn" aria-label="Кликнуть">Клик!</button>
+
+      <div class="grid" style="margin-top:12px">
+        <div class="section" id="prestigeBox">
+          <div class="row" style="justify-content:space-between; align-items:center">
+            <div>
+              <div class="title">Престиж</div>
+              <div class="muted" id="prestigeInfo">Сброс прогресса ради постоянного бонуса к множителю.</div>
+            </div>
+            <div class="row">
+              <button class="btn" id="toggleSounds">🔊 Вкл. звук</button>
+              <button class="btn gold" id="prestigeBtn" disabled>Престиж (0 очков)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="title" style="margin-bottom:6px">Достижения</div>
+          <div class="ach-list" id="achievements"></div>
+        </div>
+
+        <div class="footer">
+          <div class="row">
+            <button class="btn" id="saveBtn">Сохранить</button>
+            <button class="btn" id="exportBtn">Экспорт</button>
+            <button class="btn" id="importBtn">Импорт</button>
+          </div>
+          <button class="btn danger" id="resetBtn">Сбросить прогресс</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Правая колонка: апгрейды + лидерборд -->
+    <section class="card">
+      <div class="heading">
+        <div class="title">Апгрейды</div>
+        <div class="muted">Рост стоимости с уровнем</div>
+      </div>
+      <div class="upgrades" id="upgrades"></div>
+
+      <div class="section" style="margin-top:12px">
+        <div class="heading" style="margin:0 0 8px 0">
+          <div class="title">Таблица лидеров (локальная)</div>
+          <button class="btn" id="submitScoreBtn">Записать результат</button>
+        </div>
+        <table class="board" id="board">
+          <thead><tr><th>#</th><th>Игрок</th><th>Очки престижа</th><th>Дата</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  // ===================== Звук =====================
+  const Sound = (()=>{
+    let ctx = null; let enabled = false;
+    function ensure(){ if(!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)(); }
+    function beep(freq=440, dur=0.08, type='sine', gain=0.03){ if(!enabled) return; ensure(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=gain; o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+dur); }
+    return {
+      toggle(btn){ enabled=!enabled; btn.textContent = enabled? '🔈 Выкл. звук' : '🔊 Вкл. звук'; if(enabled) beep(880,0.05,'triangle',0.02); },
+      click(){ beep(540,0.03,'square',0.025); },
+      buy(){ beep(620,0.05,'triangle',0.03); },
+      error(){ beep(180,0.12,'sawtooth',0.04); },
+      ach(){ beep(820,0.07,'triangle',0.035); setTimeout(()=>beep(980,0.09,'triangle',0.035),80); },
+      prestige(){ [520,660,820,980].forEach((f,i)=>setTimeout(()=>beep(f,0.07,'sine',0.04), i*90)); }
+    };
+  })();
+
+  // ===================== Утилиты =====================
+  const clamp = (n,min,max)=>Math.min(Math.max(n,min),max);
+  const fnum = (n)=>{
+    if(!isFinite(n)) return '∞';
+    if(n<1000) return Math.floor(n).toString();
+    const units=['','K','M','B','T','Qa','Qi'];
+    let u=0; let x=n; while(x>=1000 && u<units.length-1){x/=1000;u++;}
+    return x.toFixed(x<10?2:x<100?1:0)+units[u];
+  };
+  const now = ()=>Date.now();
+  const fmtDate = (t)=> new Date(t).toLocaleString();
+
+  // ===================== Модель =====================
+  class Upgrade{
+    constructor({id, title, desc, baseCost, costScale=1.15, type, value}){
+      this.id=id; this.title=title; this.desc=desc; this.baseCost=baseCost; this.costScale=costScale; this.type=type; this.value=value; this.level=0;
+    }
+    get cost(){ return Math.ceil(this.baseCost * Math.pow(this.costScale, this.level)); }
+  }
+
+  class Game{
+    constructor(){
+      this.coins=0; this.clickBase=1; this.multiplier=1; this.perSec=0; this.lastTs=now(); this.version=2;
+      this.totalEarned=0; this.clicks=0; this.prestigePoints=0; this.permaMult=1; // множитель от престижа
+      this.ach = {}; // достижения: id => true
+      this.upgrades=[
+        new Upgrade({id:'click+', title:'Сильнее клик', desc:'+1 к базе за клик', baseCost:15, type:'click', value:1}),
+        new Upgrade({id:'mult', title:'Множитель', desc:'×1.2 к клику и доходу', baseCost:100, costScale:1.25, type:'mult', value:1.2}),
+        new Upgrade({id:'auto1', title:'Автокликер', desc:'+1 в сек', baseCost:50, type:'auto', value:1}),
+        new Upgrade({id:'auto2', title:'Станок', desc:'+10 в сек', baseCost:500, type:'auto', value:10}),
+        new Upgrade({id:'auto3', title:'Фабрика', desc:'+100 в сек', baseCost:5000, type:'auto', value:100}),
+      ];
+    }
+    get perClick(){ return Math.floor(this.clickBase * this.multiplier * this.permaMult); }
+    get globalMult(){ return +(this.multiplier * this.permaMult).toFixed(3); }
+
+    applyUpgrade(u){
+      switch(u.type){
+        case 'click': this.clickBase += u.value; break;
+        case 'mult': this.multiplier = +(this.multiplier * u.value).toFixed(4); break;
+        case 'auto': this.perSec += u.value; break;
+      }
+      u.level++;
+    }
+
+    canBuy(u){ return this.coins >= u.cost; }
+    buy(u){ if(!this.canBuy(u)) return false; this.coins -= u.cost; this.applyUpgrade(u); return true; }
+
+    tick(dt){ // dt в секундах
+      if(this.perSec>0){ const add = this.perSec * dt * this.permaMult; this.coins += add; this.totalEarned += add; }
+    }
+
+    click(){ const add=this.perClick; this.coins += add; this.totalEarned += add; this.clicks++; }
+
+    // Престиж: рассчитываем очки от общего заработка
+    prestigeGain(){ return Math.floor(Math.sqrt(this.totalEarned/1000)); }
+
+    doPrestige(points){
+      // Перманентный бонус: +10% к перма-мульту за каждое очко
+      this.prestigePoints += points;
+      this.permaMult = +(1 + this.prestigePoints*0.1).toFixed(3);
+      // Сброс прогресса
+      this.coins=0; this.clickBase=1; this.multiplier=1; this.perSec=0; this.upgrades.forEach(u=>u.level=0);
+      this.totalEarned=0; this.clicks=0;
+    }
+
+    // Сохранение
+    toJSON(){
+      return {
+        v:this.version, coins:this.coins, clickBase:this.clickBase, multiplier:this.multiplier, perSec:this.perSec,
+        lastTs:now(), upgrades:this.upgrades.map(u=>({id:u.id, level:u.level})), totalEarned:this.totalEarned, clicks:this.clicks,
+        prestigePoints:this.prestigePoints, permaMult:this.permaMult, ach:this.ach
+      };
+    }
+
+    load(data){
+      if(!data) return;
+      this.coins=data.coins||0; this.clickBase=data.clickBase||1; this.multiplier=data.multiplier||1; this.perSec=data.perSec||0; this.lastTs=data.lastTs||now();
+      this.totalEarned=data.totalEarned||0; this.clicks=data.clicks||0; this.prestigePoints=data.prestigePoints||0; this.permaMult=data.permaMult||1; this.ach=data.ach||{};
+      const levels = Object.fromEntries((data.upgrades||[]).map(x=>[x.id,x.level]));
+      this.upgrades.forEach(u=>{u.level=levels[u.id]||0;});
+    }
+  }
+
+  // ===================== Достижения =====================
+  const ACH_DEFS = [
+    {id:'first_click', title:'Первый клик', desc:'Сделай 1 клик', test:g=>g.clicks>=1},
+    {id:'10k_earned', title:'Первая десятка K', desc:'Заработай всего 10 000', test:g=>g.totalEarned>=10000},
+    {id:'100cps', title:'Сотня в секунду', desc:'Достигни 100/сек', test:g=>g.perSec>=100},
+    {id:'first_prestige', title:'Первая звезда', desc:'Соверши престиж', test:g=>g.prestigePoints>=1},
+    {id:'click_master', title:'Мастер клика', desc:'Сделай 1000 кликов', test:g=>g.clicks>=1000},
+  ];
+
+  // ===================== Вью/контроллер =====================
+  const els = {
+    coins: document.getElementById('coins'),
+    perClick: document.getElementById('perClick'),
+    perSec: document.getElementById('perSec'),
+    mult: document.getElementById('mult'),
+    pp: document.getElementById('pp'),
+    clickBtn: document.getElementById('clickBtn'),
+    upgrades: document.getElementById('upgrades'),
+    resetBtn: document.getElementById('resetBtn'),
+    saveBtn: document.getElementById('saveBtn'),
+    exportBtn: document.getElementById('exportBtn'),
+    importBtn: document.getElementById('importBtn'),
+    toast: document.getElementById('toast'),
+    prestigeBtn: document.getElementById('prestigeBtn'),
+    prestigeInfo: document.getElementById('prestigeInfo'),
+    toggleSounds: document.getElementById('toggleSounds'),
+    achievements: document.getElementById('achievements'),
+    boardBody: document.querySelector('#board tbody'),
+    submitScoreBtn: document.getElementById('submitScoreBtn')
+  };
+
+  const game = new Game();
+
+  // Загрузка
+  try{
+    const raw = localStorage.getItem('clicker_save');
+    if(raw){ game.load(JSON.parse(raw)); }
+  }catch(e){ console.warn('load failed', e); }
+
+  // Оффлайн прогресс
+  const offlineSec = clamp((now() - (game.lastTs||now()))/1000, 0, 60*60*8); // до 8 часов
+  if(offlineSec>1 && game.perSec>0){
+    game.tick(offlineSec);
+    showToast(`Пока тебя не было: +${fnum(game.perSec*offlineSec*game.permaMult)} 💰`);
+  }
+
+  // Рендер апгрейдов
+  function renderUpgrades(){
+    els.upgrades.innerHTML='';
+    game.upgrades.forEach(u=>{
+      const item=document.createElement('div'); item.className='upgrade';
+      item.innerHTML=`
+        <div class="u-icon">${iconFor(u)}</div>
+        <div class="u-body">
+          <div class="u-title">${u.title} <span class="muted">ур. ${u.level}</span></div>
+          <div class="u-sub">${u.desc}</div>
+        </div>
+        <div class="u-buy">
+          <div class="muted">${fnum(u.cost)} 💰</div>
+          <button class="btn primary" data-up="${u.id}">Купить</button>
+        </div>`;
+      els.upgrades.appendChild(item);
+    });
+  }
+
+  function renderAchievements(){
+    els.achievements.innerHTML='';
+    ACH_DEFS.forEach(a=>{
+      const done = !!game.ach[a.id];
+      const row = document.createElement('div'); row.className='ach'+(done?' done':'');
+      row.innerHTML = `<div>${done?'🏆':'🎯'}</div><div><div class="u-title">${a.title}</div><div class="u-sub">${a.desc}</div></div>`;
+      els.achievements.appendChild(row);
+    });
+  }
+
+  function iconFor(u){
+    if(u.type==='click') return '🖱️';
+    if(u.type==='mult') return '✨';
+    if(u.type==='auto') return '⚙️';
+    return '⬆️';
+  }
+
+  function updateUI(){
+    els.coins.textContent = fnum(game.coins) + ' 💰';
+    els.perClick.textContent = `+${fnum(game.perClick)}`;
+    els.perSec.textContent = fnum(game.perSec*game.permaMult);
+    els.mult.textContent = `×${game.globalMult}`;
+    els.pp.textContent = fnum(game.prestigePoints);
+
+    // престиж инфо
+    const gain = game.prestigeGain();
+    els.prestigeInfo.textContent = gain>0 ? `Сейчас получишь ${gain} очк. престижа (каждое = +10% перма-множителя)` : 'Копи больше общего заработка, чтобы получить очки престижа.';
+    els.prestigeBtn.textContent = `Престиж (${gain} очк.)`;
+    els.prestigeBtn.disabled = gain<=0;
+
+    // дизейбл кнопок покупки
+    els.upgrades.querySelectorAll('[data-up]').forEach(btn=>{
+      const u = game.upgrades.find(x=>x.id===btn.dataset.up);
+      btn.disabled = !game.canBuy(u);
+    })
+  }
+
+  function save(){
+    try{ localStorage.setItem('clicker_save', JSON.stringify(game.toJSON())); showToast('Сохранено ✅'); }
+    catch(e){ showToast('Не удалось сохранить'); }
+  }
+
+  function exportSave(){
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(game.toJSON()))));
+    navigator.clipboard.writeText(b64).then(()=>showToast('Экспорт в буфер обмена 📋'));
+  }
+
+  function importSave(){
+    const str = prompt('Вставь строку сохранения:'); if(!str) return;
+    try{ const json = JSON.parse(decodeURIComponent(escape(atob(str)))); game.load(json); save(); renderUpgrades(); renderAchievements(); updateUI(); showToast('Импортировано 🎉'); }
+    catch(e){ showToast('Ошибка импорта'); Sound.error(); }
+  }
+
+  function reset(){
+    if(!confirm('Точно сбросить прогресс?')) return;
+    localStorage.removeItem('clicker_save');
+    location.reload();
+  }
+
+  function showToast(text){
+    els.toast.textContent=text; els.toast.classList.add('show');
+    clearTimeout(showToast._t); showToast._t=setTimeout(()=>els.toast.classList.remove('show'), 2200);
+  }
+
+  // Таблица лидеров (локально)
+  function getBoard(){ try{ return JSON.parse(localStorage.getItem('clicker_board')||'[]'); }catch{ return []; } }
+  function setBoard(b){ localStorage.setItem('clicker_board', JSON.stringify(b.slice(0,20))); }
+  function renderBoard(){
+    const b = getBoard().sort((a,b)=>b.pts-a.pts);
+    els.boardBody.innerHTML = b.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.pts}</td><td>${fmtDate(r.t)}</td></tr>`).join('');
+  }
+  function submitScore(){
+    const name = (prompt('Ник для таблицы лидеров:', 'Игрок')||'Игрок').slice(0,20);
+    const b = getBoard(); b.push({name, pts: game.prestigePoints, t: now()}); setBoard(b); renderBoard(); showToast('Результат записан 🏁');
+  }
+
+  // Проверка достижений
+  function checkAchievements(){
+    let unlocked = [];
+    ACH_DEFS.forEach(a=>{
+      if(!game.ach[a.id] && a.test(game)){
+        game.ach[a.id]=true; unlocked.push(a.title);
+      }
+    });
+    if(unlocked.length){ renderAchievements(); showToast('Достижения: '+unlocked.join(', ')); Sound.ach(); }
+  }
+
+  // Слушатели
+  els.clickBtn.addEventListener('click', ()=>{ game.click(); Sound.click(); animatePulse(els.clickBtn); updateUI(); checkAchievements(); });
+  document.addEventListener('keydown', (e)=>{
+    if(e.code==='Space' && !e.repeat){ e.preventDefault(); game.click(); Sound.click(); animatePulse(els.clickBtn); updateUI(); checkAchievements(); }
+  });
+  els.upgrades.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-up]'); if(!btn) return;
+    const u = game.upgrades.find(x=>x.id===btn.dataset.up);
+    if(game.buy(u)) { Sound.buy(); save(); renderUpgrades(); updateUI(); checkAchievements(); }
+  });
+  els.resetBtn.addEventListener('click', reset);
+  els.saveBtn.addEventListener('click', save);
+  els.exportBtn.addEventListener('click', exportSave);
+  els.importBtn.addEventListener('click', importSave);
+  els.toggleSounds.addEventListener('click', ()=>Sound.toggle(els.toggleSounds));
+  els.prestigeBtn.addEventListener('click', ()=>{
+    const gain = game.prestigeGain(); if(gain<=0) { Sound.error(); return; }
+    if(!confirm(`Престиж даст ${gain} очк. (+${gain*10}% перма-множителя). Сбросить прогресс?`)) return;
+    game.doPrestige(gain); Sound.prestige(); save(); renderUpgrades(); renderAchievements(); updateUI(); checkAchievements();
+    // после престижа можно сразу записать результат
+    if(confirm('Записать результат в таблицу лидеров?')) submitScore();
+  });
+  els.submitScoreBtn.addEventListener('click', submitScore);
+
+  // Игровой цикл
+  let last = now();
+  function loop(){
+    const t = now(); const dt = (t - last)/1000; last = t;
+    game.tick(dt); // пассивный доход
+    if(Math.random()<0.1) updateUI();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  function animatePulse(el){
+    el.animate([
+      { transform:'translateY(0) scale(1)' },
+      { transform:'translateY(4px) scale(.98)' },
+      { transform:'translateY(0) scale(1)' }
+    ], { duration:150, easing:'ease-out' });
+  }
+
+  // Первая отрисовка
+  renderUpgrades();
+  renderAchievements();
+  renderBoard();
+  updateUI();
+})();
+</script>
+</body>
+</html>
